@@ -7,6 +7,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SkinnedMeshComponent.h"
 #include "Components/InputComponent.h"
+#include "../Components/InteractionComponent.h"
 
 // Sets default values
 ASurvivalCharacter::ASurvivalCharacter()
@@ -49,6 +50,9 @@ ASurvivalCharacter::ASurvivalCharacter()
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetMesh()->SetOwnerNoSee(true);
 
+	InteractionCheckFrequency = 0.f;
+	InteractionCheckDistance = 1000.f;
+
 }
 
 // Called when the game starts or when spawned
@@ -62,6 +66,8 @@ void ASurvivalCharacter::BeginPlay()
 void ASurvivalCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	PerformInteractionCheck();
 
 }
 
@@ -116,3 +122,55 @@ void ASurvivalCharacter::StopCrouching()
 	UnCrouch();
 }
 
+
+void ASurvivalCharacter::PerformInteractionCheck()
+{
+	if (!GetController()) return;
+
+	InteractionData.LastInteractionCheckTime = GetWorld()->GetTimeSeconds();
+
+	FVector EyesLoc;
+	FRotator EyesRot;
+
+	GetController()->GetPlayerViewPoint(EyesLoc, EyesRot);
+
+	FVector TraceStart = EyesLoc;
+	FVector TraceEnd = (EyesRot.Vector() * InteractionCheckDistance) + TraceStart;
+	FHitResult TraceHit;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(TraceHit, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
+	{
+		if (TraceHit.GetActor())
+		{
+			if (auto* InteractionComponent = Cast<UInteractionComponent>(TraceHit.GetActor()->GetComponentByClass(UInteractionComponent::StaticClass())))
+			{
+				float Distance = (TraceStart - TraceHit.ImpactPoint).Size();
+				if (InteractionComponent != GetInteractable() && Distance <= InteractionComponent->InteractionDistance)
+				{
+					FoundNewInteractable(InteractionComponent);
+				}
+				else if(Distance > InteractionComponent->InteractionDistance && GetInteractable())
+				{
+					CouldntFindInteractable();
+				}
+
+				return;
+			}
+		}
+	}
+
+	CouldntFindInteractable();
+}
+
+void ASurvivalCharacter::CouldntFindInteractable()
+{
+
+}
+
+void ASurvivalCharacter::FoundNewInteractable(UInteractionComponent* Interactable)
+{
+	UE_LOG(LogTemp, Warning, TEXT("We found an interactable"));
+}

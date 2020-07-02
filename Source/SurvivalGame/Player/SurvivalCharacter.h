@@ -8,6 +8,29 @@
 
 class UCameraComponent;
 class USkeletalMeshComponent;
+class UInteractionComponent;
+
+USTRUCT()
+struct FInteractionData
+{
+	GENERATED_BODY()
+
+	FInteractionData()
+	{
+		ViewedInteractionComponent = nullptr;
+		LastInteractionCheckTime = 0.f;
+		bInteractHeld = false;
+	}
+
+	UPROPERTY()
+	UInteractionComponent* ViewedInteractionComponent; // The current interactable component we're viewing
+
+	UPROPERTY()
+	float LastInteractionCheckTime; // The time when we last checked for an interactable
+
+	UPROPERTY()
+	bool bInteractHeld; // whether the local player is holding the interact key
+};
 
 UCLASS()
 class SURVIVALGAME_API ASurvivalCharacter : public ACharacter
@@ -37,9 +60,31 @@ public:
 	USkeletalMeshComponent* BackpackMesh;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
+	// Interaction
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float InteractionCheckFrequency;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float InteractionCheckDistance; // for RayCasting
+
+	void PerformInteractionCheck();
+
+	void CouldntFindInteractable();
+	void FoundNewInteractable(UInteractionComponent* Interactable);
+	void BeginInteract();
+	void EndInteract();
+	void Interact();
+
+	UPROPERTY()
+	FInteractionData InteractionData; // Info about the current state of the players interaction
+
+	UInteractionComponent* GetInteractable() const { return InteractionData.ViewedInteractionComponent; }
+
+
+	// Movement
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
 	void LookUp(float AxisValue);
@@ -48,8 +93,7 @@ protected:
 	void StopCrouching();
 
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
