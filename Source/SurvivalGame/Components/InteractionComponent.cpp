@@ -14,9 +14,53 @@ UInteractionComponent::UInteractionComponent()
     InteractableActionText = FText::FromString(TEXT("Interact"));
 
     Space = EWidgetSpace::Screen;
-    DrawSize = FIntPoint(400, 100);
+    DrawSize = FIntPoint(600, 100);
     bDrawAtDesiredSize = true;
 
     SetActive(true);
     SetHiddenInGame(true);
+}
+
+void UInteractionComponent::BeginFocus(ASurvivalCharacter* Character)
+{
+    if (!IsActive() || !GetOwner() || !Character) return;
+
+    OnBeginFocus.Broadcast(Character);
+
+    SetHiddenInGame(false);
+
+    if (!GetOwner()->HasAuthority())
+    {
+        if (auto* Component = Cast<UPrimitiveComponent>(GetOwner()->GetComponentByClass(UPrimitiveComponent::StaticClass())) )
+        {
+            Component->SetRenderCustomDepth(true);
+        }
+        // for (auto& VisualComp : GetOwner()->GetComponentByClass(UPrimitiveComponent::StaticClass()))
+        // {
+        //     if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(VisualComp))
+        //     {
+        //         Prim->SetRenderCustomDepth(true);
+        //     }
+        // }
+    }
+}
+
+void UInteractionComponent::EndFocus(ASurvivalCharacter* Character)
+{
+
+}
+
+void UInteractionComponent::BeginInteract(ASurvivalCharacter* Character)
+{
+
+}
+
+void UInteractionComponent::EndInteract(ASurvivalCharacter* Character)
+{
+
+}
+
+void UInteractionComponent::Interact(ASurvivalCharacter* Character)
+{
+    OnInteract.Broadcast(Character);
 }

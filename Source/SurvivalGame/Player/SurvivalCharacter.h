@@ -74,14 +74,23 @@ protected:
 
 	void CouldntFindInteractable();
 	void FoundNewInteractable(UInteractionComponent* Interactable);
+
 	void BeginInteract();
 	void EndInteract();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerBeginInteract();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerEndInteract();
+
 	void Interact();
 
 	UPROPERTY()
 	FInteractionData InteractionData; // Info about the current state of the players interaction
 
 	UInteractionComponent* GetInteractable() const { return InteractionData.ViewedInteractionComponent; }
+
+	FTimerHandle TimerHandle_Interact;
 
 
 	// Movement

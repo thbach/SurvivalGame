@@ -8,6 +8,7 @@
 #include "Components/SkinnedMeshComponent.h"
 #include "Components/InputComponent.h"
 #include "../Components/InteractionComponent.h"
+#include "TimerManager.h"
 
 // Sets default values
 ASurvivalCharacter::ASurvivalCharacter()
@@ -85,6 +86,9 @@ void ASurvivalCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ASurvivalCharacter::StartCrouching);
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ASurvivalCharacter::StopCrouching);
+
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ASurvivalCharacter::BeginInteract);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &ASurvivalCharacter::EndInteract);
 
 }
 
@@ -167,10 +171,86 @@ void ASurvivalCharacter::PerformInteractionCheck()
 
 void ASurvivalCharacter::CouldntFindInteractable()
 {
+	if (!InteractionData.ViewedInteractionComponent) return;
+	InteractionData.ViewedInteractionComponent->SetHiddenInGame(true);
+	// UE_LOG(LogTemp, Warning, TEXT("No"));
 
 }
 
 void ASurvivalCharacter::FoundNewInteractable(UInteractionComponent* Interactable)
 {
-	UE_LOG(LogTemp, Warning, TEXT("We found an interactable"));
+	if (Interactable)
+	{
+		Interactable->SetHiddenInGame(false);
+		InteractionData.ViewedInteractionComponent = Interactable;
+		// UE_LOG(LogTemp, Warning, TEXT("We found an interactable"));
+	}
+
 }
+
+void ASurvivalCharacter::BeginInteract()
+{
+	if (!HasAuthority()) ServerBeginInteract();
+
+	InteractionData.bInteractHeld = true;
+
+	if(UInteractionComponent* Interactable = GetInteractable())
+	{
+		Interactable->BeginInteract(this);
+
+		if (FMath::IsNearlyZero(Interactable->InteractionTime))
+		{
+			Interact();
+		}
+		else
+		{
+			GetWorldTimerManager().SetTimer(TimerHandle_Interact, this, &ASurvivalCharacter::Interact, Interactable->InteractionTime, false);
+		}
+
+	}
+}
+
+void ASurvivalCharacter::EndInteract()
+{
+	if (!HasAuthority()) ServerEndInteract();
+
+	InteractionData.bInteractHeld = false;
+
+	GetWorldTimerManager().ClearTimer(TimerHandle_Interact);
+
+	if (UInteractionComponent* Interactable = GetInteractable())
+	{
+		Interactable->EndInteract(this);
+	}
+}
+
+void ASurvivalCharacter::Interact()
+{
+	GetWorldTimerManager().ClearTimer(TimerHandle_Interact);
+
+	if (UInteractionComponent* Interactable = GetInteractable())
+	{
+		Interactable->Interact(this);
+	}
+}
+
+void ASurvivalCharacter::ServerBeginInteract_Implementation()
+{
+	BeginInteract();
+}
+
+bool ASurvivalCharacter::ServerBeginInteract_Validate()
+{
+	return true;
+}
+
+void ASurvivalCharacter::ServerEndInteract_Implementation()
+{
+	EndInteract();
+}
+
+bool ASurvivalCharacter::ServerEndInteract_Validate()
+{
+	return true;
+}
+
