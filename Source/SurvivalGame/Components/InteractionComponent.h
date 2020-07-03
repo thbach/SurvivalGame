@@ -37,6 +37,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
 	bool bAllowMultipleInteractors;
 
+	// Call this to change the name of the interactable. Will also refresh the interaction widget.
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	void SetInteractableNameText(const FText& NewNameText);
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	void SetInteractableActionText(const FText& NewActionText);
+
 	// Delegates
 	UPROPERTY(EditDefaultsOnly, BlueprintAssignable)
 	FOnBeginInteract OnBeginInteract;
@@ -53,7 +60,22 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintAssignable)
 	FOnInteract OnInteract;
 
+protected:
+	// Called when the game stars
+	virtual void Deactivate() override;
+
+	bool CanInteract(ASurvivalCharacter* Character) const;
+
+	// On the server, this will hold all interactors. On the local player, this will just hold the local player (provided they are an interactor)
+	UPROPERTY()
+	TArray<ASurvivalCharacter* > Interactors;
+
 public:
+
+	/* 	Refresh the interaction widget and its custom widgets.
+	An Example of when we'd use this is when we take 3 items out of a stack of 10, and we need to update the widget
+	so it shows the stack as having 7 items left. */
+	void RefreshWidget();
 
 	// Called on the client when the players interaction check trace begins/ends hitting this item
 	void BeginFocus(ASurvivalCharacter* Character);
@@ -64,5 +86,11 @@ public:
 	void EndInteract(ASurvivalCharacter* Character);
 
 	void Interact(ASurvivalCharacter* Character);
+
+	// Return a value from 0-1 denoting how far through the interact we are.
+	// On server this is the first interactors percentage, on client this is the local interactors percentage
+	UFUNCTION(BlueprintPure, Category = "Interaction")
+	float GetInteractPercentage();
+
 
 };

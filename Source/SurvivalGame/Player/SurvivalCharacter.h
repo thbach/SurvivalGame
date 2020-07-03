@@ -92,7 +92,15 @@ protected:
 
 	FTimerHandle TimerHandle_Interact;
 
+public:
+	// True if we're interacting with an item that has an interaction time (eg a lamp that takes 2 seconds to turn on)
+	bool IsInteracting() const;
 
+	// Get the time till we interact with the current interactable
+	float GetRemainingInteractTime() const;
+
+
+protected:
 	// Movement
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);

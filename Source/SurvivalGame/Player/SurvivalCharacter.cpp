@@ -68,8 +68,12 @@ void ASurvivalCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	PerformInteractionCheck();
+	const bool bIsInteractingOnServer = (HasAuthority() && IsInteracting());
 
+	if (!HasAuthority() || bIsInteractingOnServer && GetWorld()->TimeSince(InteractionData.LastInteractionCheckTime) > InteractionCheckFrequency)
+	{
+		PerformInteractionCheck();
+	}
 }
 
 // Called to bind functionality to input
@@ -171,21 +175,36 @@ void ASurvivalCharacter::PerformInteractionCheck()
 
 void ASurvivalCharacter::CouldntFindInteractable()
 {
-	if (!InteractionData.ViewedInteractionComponent) return;
-	InteractionData.ViewedInteractionComponent->SetHiddenInGame(true);
-	// UE_LOG(LogTemp, Warning, TEXT("No"));
+	// We've lost focus on an interactable. Clear the timer.
+	if (GetWorldTimerManager().IsTimerActive(TimerHandle_Interact))
+	{
+		GetWorldTimerManager().ClearTimer(TimerHandle_Interact);
+	}
+
+	// Tell the interactable we've stopped focusing on it and clear the current interactable
+	if (UInteractionComponent* Interactable = GetInteractable())
+	{
+		Interactable->EndFocus(this);
+		if (InteractionData.bInteractHeld)
+		{
+			EndInteract();
+		}
+	}
+
+	InteractionData.ViewedInteractionComponent = nullptr;
 
 }
 
 void ASurvivalCharacter::FoundNewInteractable(UInteractionComponent* Interactable)
 {
-	if (Interactable)
-	{
-		Interactable->SetHiddenInGame(false);
-		InteractionData.ViewedInteractionComponent = Interactable;
-		// UE_LOG(LogTemp, Warning, TEXT("We found an interactable"));
-	}
+	EndInteract();
 
+	if (UInteractionComponent* OldInteractable = GetInteractable())
+	{
+		OldInteractable->EndFocus(this);
+	}
+	InteractionData.ViewedInteractionComponent = Interactable;
+	Interactable->BeginFocus(this);
 }
 
 void ASurvivalCharacter::BeginInteract()
@@ -232,6 +251,16 @@ void ASurvivalCharacter::Interact()
 	{
 		Interactable->Interact(this);
 	}
+}
+
+bool ASurvivalCharacter::IsInteracting() const
+{
+	return GetWorldTimerManager().IsTimerActive(TimerHandle_Interact);
+}
+
+float ASurvivalCharacter::GetRemainingInteractTime() const
+{
+	return GetWorldTimerManager().GetTimerRemaining(TimerHandle_Interact);
 }
 
 void ASurvivalCharacter::ServerBeginInteract_Implementation()
