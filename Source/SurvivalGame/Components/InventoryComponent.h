@@ -7,6 +7,8 @@
 #include "InventoryComponent.generated.h"
 
 class UItem;
+class UActorChannel;
+class FOutBunch;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SURVIVALGAME_API UInventoryComponent : public UActorComponent
@@ -17,13 +19,18 @@ public:
 	// Sets default values for this component's properties
 	UInventoryComponent();
 
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	float GetWeightCapacity() const { return WeightCapacity; }
+
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	int32 GetCapacity() const { return Capacity; }
+
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	TArray<UItem*> GetItems() const { return Items; }
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
-public:
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 
@@ -38,10 +45,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory", meta = (ClampMin = 0, ClampMax = 200))
 	int32 Capacity;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual bool ReplicateSubobjects(UActorChannel *Channel, FOutBunch *Bunch, FReplicationFlags *RepFlags) override;
+
 private:
 
 	UFUNCTION()
 	void OnRep_Items();
+
+	UPROPERTY()
+	int32 ReplicatedItemsKey;
 
 
 };
