@@ -90,6 +90,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	void SetQuantity(const int32 NewQuantity);
 
+	UFUNCTION(BlueprintPure, Category = "Item")
+	int32 GetQuantity() const { return Quantity; }
+
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	float GetStackWeight() const { return Quantity * Weight; }
 
