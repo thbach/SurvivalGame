@@ -30,7 +30,6 @@ void UItem::SetQuantity(const int32 NewQuantity)
         Quantity = FMath::Clamp(NewQuantity, 0, bStackable ? MaxStackSize : 1);
         MarkDirtyForReplication();
     }
-
 }
 
 bool UItem::ShouldShowInInventory() const
@@ -58,8 +57,6 @@ void UItem::MarkDirtyForReplication()
     {
         ++OwningInventory->ReplicatedItemsKey;
     }
-
-
 }
 
 void UItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const

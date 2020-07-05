@@ -9,6 +9,7 @@
 class UCameraComponent;
 class USkeletalMeshComponent;
 class UInteractionComponent;
+class UInventoryComponent;
 
 USTRUCT()
 struct FInteractionData
@@ -40,6 +41,9 @@ class SURVIVALGAME_API ASurvivalCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ASurvivalCharacter();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
+	UInventoryComponent* PlayerInventory;
 
 	UPROPERTY(EditAnywhere, Category = "Components", BlueprintReadWrite)
 	UCameraComponent* CameraComponent;

@@ -33,16 +33,16 @@ public:
 	FItemAddResult(int32 InItemQuantity, int32 InQuantityAdded) : AmountToGive(InItemQuantity), ActualAmountGiven(InQuantityAdded) {};
 
 	UPROPERTY(BlueprintReadOnly, Category = "Item Add Result")
-	int32 AmountToGive;
+	int32 AmountToGive = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Item Add Result")
-	int32 ActualAmountGiven;
+	int32 ActualAmountGiven = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Item Add Result")
-	EItemAddResult Result;
+	EItemAddResult Result = EItemAddResult::IAR_NoItemsAdded;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Item Add Result")
-	FText ErrorText;
+	FText ErrorText = FText::GetEmpty();
 
 	// Helpers
 	static FItemAddResult AddedNone(const int32 InItemQuantity, const FText& ErrorText)
@@ -50,7 +50,6 @@ public:
 		FItemAddResult AddedNoneResult(InItemQuantity);
 		AddedNoneResult.Result = EItemAddResult::IAR_NoItemsAdded;
 		AddedNoneResult.ErrorText = ErrorText;
-
 		return AddedNoneResult;
 	}
 
@@ -59,15 +58,13 @@ public:
 		FItemAddResult AddedSomeResult(InItemQuantity, ActualAmountGiven);
 		AddedSomeResult.Result = EItemAddResult::IAR_SomeItemsAdded;
 		AddedSomeResult.ErrorText = ErrorText;
-
 		return AddedSomeResult;
 	}
 
 	static FItemAddResult AddedAll(const int32 InItemQuantity)
 	{
-		FItemAddResult AddedAllResult(InItemQuantity);
+		FItemAddResult AddedAllResult(InItemQuantity, InItemQuantity);
 		AddedAllResult.Result = EItemAddResult::IAR_AllItemsAdded;
-
 		return AddedAllResult;
 	}
 };

@@ -8,6 +8,7 @@
 #include "Components/SkinnedMeshComponent.h"
 #include "Components/InputComponent.h"
 #include "../Components/InteractionComponent.h"
+#include "../Components/InventoryComponent.h"
 #include "TimerManager.h"
 
 // Sets default values
@@ -47,6 +48,10 @@ ASurvivalCharacter::ASurvivalCharacter()
 	BackpackMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BackpackMesh"));
 	BackpackMesh->SetupAttachment(GetMesh());
 	// BackpackMesh->SetMasterPoseComponent(GetMesh());
+
+	PlayerInventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("PlayerInventory"));
+	PlayerInventory->SetCapacity(20);
+	PlayerInventory->SetWeightCapacity(80.f);
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetMesh()->SetOwnerNoSee(true);
@@ -211,6 +216,10 @@ void ASurvivalCharacter::BeginInteract()
 {
 	if (!HasAuthority()) ServerBeginInteract();
 
+	// As an optimization, the server only checks that we're looking at an item once we begin interacting with it. This saves the server doing a check every tick for an interactable Item.
+	// The exception is a non instant interact. In this case, the server will check every tick for the duration of the interact.
+	if (HasAuthority()) PerformInteractionCheck();
+
 	InteractionData.bInteractHeld = true;
 
 	if(UInteractionComponent* Interactable = GetInteractable())
@@ -225,7 +234,6 @@ void ASurvivalCharacter::BeginInteract()
 		{
 			GetWorldTimerManager().SetTimer(TimerHandle_Interact, this, &ASurvivalCharacter::Interact, Interactable->InteractionTime, false);
 		}
-
 	}
 }
 
