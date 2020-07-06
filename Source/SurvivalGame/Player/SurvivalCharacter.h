@@ -7,6 +7,8 @@
 #include "SurvivalCharacter.generated.h"
 
 class UCameraComponent;
+class UItem;
+class APickup;
 class USkeletalMeshComponent;
 class UInteractionComponent;
 class UInventoryComponent;
@@ -102,6 +104,27 @@ public:
 
 	// Get the time till we interact with the current interactable
 	float GetRemainingInteractTime() const;
+
+	// Items
+
+	// [Server] Use an item form our inventory
+	UFUNCTION(BlueprintCallable, Category = "Items")
+	void UseItem(UItem* Item);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerUseItem(UItem* Item);
+
+	// [Server] Drop an item
+	UFUNCTION(BlueprintCallable, Category = "Items")
+	void DropItem(UItem* Item, const int32 Quantity);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerDropItem(UItem* Item, const int32 Quantity);
+
+	// We need this becasue the pickups use a blueprint base class
+	UPROPERTY(EditDefaultsOnly, Category = "Item")
+	TSubclassOf<APickup> PickupClass;
+
 
 
 protected:

@@ -31,19 +31,28 @@ APickup::APickup()
 
 void APickup::InitializedPickup(const TSubclassOf<class UItem> ItemClass, const int32 Quantity)
 {
+	UE_LOG(LogTemp, Warning, TEXT("InitializedPickup"));
+	if (HasAuthority() && ItemClass && Quantity > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InitializedPickup - has authority"));
+	}
 	if (HasAuthority() && ItemClass && Quantity > 0)
 	{
 		Item = NewObject<UItem>(this, ItemClass);
 		Item->SetQuantity(Quantity);
 
+		// PickupMesh->SetStaticMesh(ItemTemplate->PickupMesh);
+		UE_LOG(LogTemp, Warning, TEXT("HasAuthority - InitializedPickup"));
 		OnRep_Item();
 		Item->MarkDirtyForReplication();
+		// item->MarkDirtyForReplication();
 	}
-
 }
 
 void APickup::OnRep_Item()
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnRepItem"));
+
 	if (Item)
 	{
 		PickupMesh->SetStaticMesh(Item->PickupMesh);
