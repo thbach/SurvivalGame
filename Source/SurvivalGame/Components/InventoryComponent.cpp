@@ -53,6 +53,8 @@ int32 UInventoryComponent::ConsumeItem(UItem* Item, const int32 Quantity)
 		{
 			ClientRefreshInventory();
 		}
+
+		return RemoveQuantity;
 	}
 	return 0;
 }

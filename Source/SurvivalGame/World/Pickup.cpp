@@ -31,28 +31,18 @@ APickup::APickup()
 
 void APickup::InitializedPickup(const TSubclassOf<class UItem> ItemClass, const int32 Quantity)
 {
-	UE_LOG(LogTemp, Warning, TEXT("InitializedPickup"));
-	if (HasAuthority() && ItemClass && Quantity > 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("InitializedPickup - has authority"));
-	}
 	if (HasAuthority() && ItemClass && Quantity > 0)
 	{
 		Item = NewObject<UItem>(this, ItemClass);
 		Item->SetQuantity(Quantity);
 
-		// PickupMesh->SetStaticMesh(ItemTemplate->PickupMesh);
-		UE_LOG(LogTemp, Warning, TEXT("HasAuthority - InitializedPickup"));
 		OnRep_Item();
 		Item->MarkDirtyForReplication();
-		// item->MarkDirtyForReplication();
 	}
 }
 
 void APickup::OnRep_Item()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnRepItem"));
-
 	if (Item)
 	{
 		PickupMesh->SetStaticMesh(Item->PickupMesh);
@@ -61,7 +51,6 @@ void APickup::OnRep_Item()
 		// Clients bind to this delgate in order to refresh the interaction widget if item quantity changes
 		Item->OnItemModified.AddDynamic(this, &APickup::OnItemModified);
 	}
-
 	// If any replicated properties on the item are changed, we refresh the widget
 	InteractionComponent->RefreshWidget();
 }
