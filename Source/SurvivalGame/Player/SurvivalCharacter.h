@@ -12,6 +12,8 @@ class APickup;
 class USkeletalMeshComponent;
 class UInteractionComponent;
 class UInventoryComponent;
+class UEquippableItem;
+class UGearItem;
 
 USTRUCT()
 struct FInteractionData
@@ -35,6 +37,8 @@ struct FInteractionData
 	bool bInteractHeld; // whether the local player is holding the interact key
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEquippedItemsChanged, const EEquippableSlot, Slot, const UEquippableItem*, Item);
+
 UCLASS()
 class SURVIVALGAME_API ASurvivalCharacter : public ACharacter
 {
@@ -43,6 +47,14 @@ class SURVIVALGAME_API ASurvivalCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ASurvivalCharacter();
+
+	// The mesh to have equipped if we dont have an item equipped
+	UPROPERTY(BlueprintReadOnly, Category = Mesh)
+	TMap<EEquippableSlot, USkeletalMesh*> NakedMeshes;
+
+	// The players body meshes
+	UPROPERTY(BlueprintReadOnly, Category = Mesh)
+	TMap<EEquippableSlot, USkeletalMeshComponent* > PlayerMeshes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
 	UInventoryComponent* PlayerInventory;
@@ -68,6 +80,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void Restart() override;
 
 	// Interaction
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
@@ -125,9 +138,29 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TSubclassOf<APickup> PickupClass;
 
+public:
 
+	bool EquipItem(UEquippableItem* Item);
+	bool UnEquipItem(UEquippableItem* Item);
+
+	void EquipGear(UGearItem* Gear);
+	void UnEquipGear(const EEquippableSlot Slot);
+
+	UPROPERTY(BlueprintAssignable, Category = "Items")
+	FOnEquippedItemsChanged OnEquippedItemsChanged;
+
+	UFUNCTION(BlueprintPure)
+	USkeletalMeshComponent* GetSlotSkeletalMeshComponent(const EEquippableSlot Slot);
+
+	UFUNCTION(BlueprintPure)
+	TMap<EEquippableSlot, UEquippableItem*> GetEquippedItems() const { return EquippedItems; }
 
 protected:
+	// Allows for efficient access of equipped items
+	UPROPERTY(VisibleAnywhere, Category = "Items")
+	TMap<EEquippableSlot, UEquippableItem* > EquippedItems;
+
+
 	// Movement
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);

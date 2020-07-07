@@ -3,3 +3,14 @@
 
 #include "SurvivalPlayerController.h"
 
+
+ASurvivalPlayerController::ASurvivalPlayerController()
+{
+
+}
+
+void ASurvivalPlayerController::ClientShowNotification_Implementation(const FText& Message)
+{
+    ShowNotification(Message);
+}
+
