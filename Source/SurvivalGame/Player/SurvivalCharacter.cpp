@@ -17,6 +17,7 @@
 #include "SurvivalPlayerController.h"
 #include "Materials/MaterialInstance.h"
 #include "TimerManager.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ASurvivalCharacter::ASurvivalCharacter()
@@ -69,6 +70,13 @@ void ASurvivalCharacter::BeginPlay()
 	}
 }
 
+void ASurvivalCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASurvivalCharacter, LootSource);
+}
+
 // Called every frame
 void ASurvivalCharacter::Tick(float DeltaTime)
 {
@@ -90,6 +98,122 @@ void ASurvivalCharacter::Restart()
 	{
 		PC->ShowIngameUI();
 	}
+}
+
+// LOOTING
+void ASurvivalCharacter::SetLootSource(UInventoryComponent* NewLootSource)
+{
+	// if the item we're looting gets destoryed, we need to tell the client to remove their loot screen
+	if (NewLootSource && NewLootSource->GetOwner())
+	{
+		NewLootSource->GetOwner()->OnDestroyed.AddUniqueDynamic(this, &ASurvivalCharacter::OnLootSourceOwnerDestroyed);
+	}
+
+	if (HasAuthority())
+	{
+		if (NewLootSource)
+		{
+			// Looting a player keeps their body alive for an extra 2 minutes to provide enough time to loot their items
+			if (ASurvivalCharacter* Character = Cast<ASurvivalCharacter>(NewLootSource->GetOwner()))
+			{
+				Character->SetLifeSpan(120.f);
+			}
+		}
+
+		LootSource = NewLootSource;
+	}
+	else
+	{
+		ServerSetLootSource(NewLootSource);
+	}
+}
+
+bool ASurvivalCharacter::IsLooting() const
+{
+	return LootSource != nullptr;
+}
+
+void ASurvivalCharacter::BeginLootingPlayer(ASurvivalCharacter* Character)
+{
+	if (Character)
+	{
+		Character->SetLootSource(PlayerInventory);
+	}
+}
+
+void ASurvivalCharacter::ServerSetLootSource_Implementation(UInventoryComponent* NewLootSource)
+{
+	SetLootSource(NewLootSource);
+}
+
+bool ASurvivalCharacter::ServerSetLootSource_Validate(UInventoryComponent* NewLootSource)
+{
+	return true;
+}
+
+void ASurvivalCharacter::OnLootSourceOwnerDestroyed(AActor* DestroyedActor)
+{
+	if (HasAuthority() && LootSource && DestroyedActor == LootSource->GetOwner())
+	{
+		ServerSetLootSource(nullptr);
+	}
+}
+
+void ASurvivalCharacter::OnRep_LootSource()
+{
+	// Bring up or remove the looting menu
+	if (ASurvivalPlayerController* PC = Cast<ASurvivalPlayerController>(GetController()))
+	{
+		if (PC->IsLocalController())
+		{
+			if (LootSource)
+			{
+				PC->ShowLootMenu(LootSource);
+			}
+			else
+			{
+				PC->HideLootMenu();
+			}
+		}
+	}
+}
+
+void ASurvivalCharacter::LootItem(UItem* ItemToGive)
+{
+	if (HasAuthority())
+	{
+		if (PlayerInventory && LootSource && ItemToGive && LootSource->HasItem(ItemToGive->GetClass(), ItemToGive->GetQuantity()))
+		{
+			const FItemAddResult AddResult = PlayerInventory->TryAddItem(ItemToGive);
+			if (AddResult.ActualAmountGiven > 0)
+			{
+				LootSource->ConsumeItem(ItemToGive, AddResult.ActualAmountGiven);
+			}
+			else
+			{
+				// Tell player why they couldnt loot the item
+				if (ASurvivalPlayerController* PC = Cast<ASurvivalPlayerController>(GetController()))
+				{
+					PC->ClientShowNotification(AddResult.ErrorText);
+				}
+			}
+		}
+	}
+	else
+	{
+		ServerLootItem(ItemToGive);
+	}
+
+}
+
+void ASurvivalCharacter::ServerLootItem_Implementation(UItem* ItemToLoot)
+{
+	LootItem(ItemToLoot);
+}
+
+bool ASurvivalCharacter::ServerLootItem_Validate(UItem* ItemToLoot)
+{
+	return true;
 }
 
 // Called to bind functionality to input

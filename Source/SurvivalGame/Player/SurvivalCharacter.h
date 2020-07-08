@@ -79,8 +79,45 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void Restart() override;
+
+// LOOTING
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetLootSource(UInventoryComponent* NewLootSource);
+
+	UFUNCTION(BlueprintPure, Category = "Looting")
+	bool IsLooting() const;
+
+protected:
+
+	// Begin being looted by a player
+	UFUNCTION()
+	void BeginLootingPlayer(ASurvivalCharacter* Character);
+
+	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable)
+	void ServerSetLootSource(UInventoryComponent* NewLootSource);
+
+	// The inventory that we are currently looking from
+	UPROPERTY(ReplicatedUsing = OnRep_LootSource, BlueprintReadOnly)
+	UInventoryComponent* LootSource;
+
+	UFUNCTION()
+	void OnLootSourceOwnerDestroyed(AActor* DestroyedActor);
+
+	UFUNCTION()
+	void OnRep_LootSource();
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "Looting")
+	void LootItem(UItem* ItemToGive);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerLootItem(UItem* ItemToLoot);
+
 
 	// Interaction
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")

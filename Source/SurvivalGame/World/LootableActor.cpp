@@ -77,7 +77,10 @@ void ALootableActor::BeginPlay()
 
 void ALootableActor::OnInteract(class ASurvivalCharacter* Character)
 {
-
+	if (Character)
+	{
+		Character->SetLootSource(Inventory);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
